@@ -25,7 +25,24 @@ const GLOBAL = `
   @keyframes pageIn   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 `;
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://ewowbwhfdpbnuvaqmxkk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_t5pln0r4nj3tiVdZ8_qUrg_pLKnAQ1i";
+
+async function dbQuery(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: options.prefer || "return=representation",
+    },
+    ...options,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
 const adj  = ["GOLDEN","BOLD","KIND","WARM","BRIGHT","SWIFT","PURE","NOBLE","BRAVE","GENTLE"];
 const noun = ["SPARK","WAVE","LINK","SEED","FLAME","CHAIN","RIPPLE","BLOOM","BRIDGE","GRACE"];
 const genCode = () => `${adj[Math.floor(Math.random()*adj.length)]}-${noun[Math.floor(Math.random()*noun.length)]}-${String(Math.floor(Math.random()*9000)+1000)}`;
@@ -330,12 +347,36 @@ function HomePage({ go }) {
 // PAGE: LIVE FEED
 // ═══════════════════════════════════════════════════════════════════════════════
 function FeedPage({ go }) {
-  const [posts, setPosts] = useState(FEED_DATA);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [composing, setComposing] = useState(false);
   const [showToast, Toast] = useToast();
 
-  const handlePost = (data) => {
-    setPosts(p => [{ id: Date.now(), ...data, links: 1, created_at: new Date().toISOString() }, ...p]);
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const data = await dbQuery("/chain_posts?select=*&order=created_at.desc&limit=50");
+      setPosts(data && data.length > 0 ? data : FEED_DATA);
+    } catch {
+      setPosts(FEED_DATA);
+    }
+    setLoading(false);
+  };
+
+  const handlePost = async (data) => {
+    try {
+      await dbQuery("/chain_posts", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      await fetchPosts();
+    } catch {
+      setPosts(p => [{ id: Date.now(), ...data, created_at: new Date().toISOString() }, ...p]);
+    }
     setComposing(false);
     showToast("Good deed posted! ✨");
   };
@@ -683,7 +724,22 @@ function AddPage({ go }) {
 
   const handleSubmit = async () => {
     if(!canSubmit) return;
-    setLoading(true); await new Promise(r=>setTimeout(r,1000)); setLoading(false); setDone(true);
+    setLoading(true);
+    try {
+      await dbQuery("/chain_links", {
+        method: "POST",
+        body: JSON.stringify({
+          code: codeClean,
+          name: name || "Anonymous",
+          story,
+          location: null,
+        }),
+      });
+    } catch(e) {
+      console.log("Save failed, continuing anyway");
+    }
+    setLoading(false);
+    setDone(true);
   };
 
   return (
@@ -798,13 +854,29 @@ function AddPage({ go }) {
 // PAGE: ASK FOR HELP
 // ═══════════════════════════════════════════════════════════════════════════════
 function AskPage({ go }) {
-  const [requests, setRequests] = useState(REQUESTS_DATA);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter]     = useState("All");
   const [postOpen, setPostOpen] = useState(false);
   const [helpTarget, setHelpTarget] = useState(null);
   const [resolveTarget, setResolveTarget] = useState(null);
   const [codes, setCodes]       = useState(null);
   const [showToast, Toast]      = useToast();
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const data = await dbQuery("/help_requests?select=*&order=created_at.desc&eq.resolved=false");
+      setRequests(data && data.length > 0 ? data : REQUESTS_DATA);
+    } catch {
+      setRequests(REQUESTS_DATA);
+    }
+    setLoading(false);
+  };
   const CATS = ["All","Transport","Moving","Companionship","Food","Teaching","Other"];
   const filtered = filter==="All" ? requests : requests.filter(r=>r.category===filter);
 
