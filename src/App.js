@@ -103,7 +103,6 @@ function useToast() {
 
 // ─── SHARED SMALL COMPONENTS ──────────────────────────────────────────────────
 const ColorBar = () => <div className="color-bar"/>;
-const QR = ({value,size=100}) => <img src={`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&color=1A1A2E&bgcolor=ffffff&margin=6&ecc=H`} width={size} height={size} alt="QR" style={{display:"block",borderRadius:8}}/>;
 
 // ─── MOCK DATA ─────────────────────────────────────────────────────────────────
 const FEED_DATA = [
@@ -483,6 +482,7 @@ function ChainMap({ links }) {
       document.head.appendChild(script);
     } catch(e) { setMapError(true); }
     return () => { if(mapObj.current){try{mapObj.current.remove();}catch(e){} mapObj.current=null;} };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (mapError) return (
