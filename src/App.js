@@ -80,7 +80,7 @@ function Nav({ page, go }) {
     const h = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h);
   }, []);
-  const LINKS = [["home","Home"],["feed","Live Feed"],["chain","My Chain"],["add","Add My Story"],["ask","Ask for Help"],["shop","Shop"]];
+  const LINKS = [["home","Home"],["feed","Live Feed"],["register","Register My Card"],["chain","My Chain"],["add","Add My Story"],["ask","Ask for Help"],["shop","Shop"]];
   const isDark = page !== "home" || scrolled;
   return (
     <>
@@ -1274,6 +1274,239 @@ const SHARED_CSS = `
   .page-wrap { animation:pageIn .35s ease both; }
 `;
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGE: REGISTER MY CARD
+// ═══════════════════════════════════════════════════════════════════════════════
+function RegisterPage({ go }) {
+  const [step, setStep]       = useState(1);
+  const [name, setName]       = useState("");
+  const [city, setCity]       = useState("");
+  const [howGot, setHowGot]   = useState("ordered");
+  const [loading, setLoading] = useState(false);
+  const [code, setCode]       = useState("");
+  const [showToast, Toast]    = useToast();
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    const newCode = genCode();
+    try {
+      await dbQuery("/chain_posts", {
+        method: "POST",
+        body: JSON.stringify({
+          author: name || "Anonymous",
+          city: city || null,
+          code: newCode,
+          color: ["#FF6B4A","#FFD44F","#3ECFA0","#4BBEF5"][Math.floor(Math.random()*4)],
+          excerpt: `A new chain begins${city ? ` in ${city}` : ""}.`,
+          links: 1,
+        }),
+      });
+    } catch(e) { console.log("Save failed, continuing"); }
+    await new Promise(r => setTimeout(r, 800));
+    setCode(newCode);
+    setLoading(false);
+    setStep(2);
+  };
+
+  const chainUrl = `https://chainofgratuity.com/chain/${code}`;
+  const QRImg = ({ value, size=140 }) => (
+    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&color=1A1A2E&bgcolor=ffffff&margin=8&ecc=H`}
+      width={size} height={size} alt="QR Code"
+      style={{display:"block",borderRadius:12,boxShadow:"0 4px 20px rgba(0,0,0,.12)"}}/>
+  );
+
+  return (
+    <>
+      <style>{`
+        .reg-page { min-height:100vh;display:grid;grid-template-columns:1fr 1fr;padding-top:0; }
+        .reg-left { background:var(--ink);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:88px 44px 48px; }
+        .reg-left-bg { position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at -10% -10%,rgba(255,212,79,.26) 0%,transparent 55%),radial-gradient(ellipse 70% 70% at 110% 110%,rgba(62,207,160,.2) 0%,transparent 55%);pointer-events:none; }
+        .reg-right { background:var(--paper);padding:88px 44px 48px;overflow-y:auto;display:flex;flex-direction:column;justify-content:center; }
+        .reg-wordmark { font-family:'Fraunces',serif;font-size:clamp(1.8rem,3vw,2.6rem);font-weight:900;color:white;line-height:1;letter-spacing:-1px;margin-bottom:6px;margin-top:28px; }
+        .reg-wordmark em { font-style:italic;color:var(--sun);display:block; }
+        .reg-tag { font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.3);margin-bottom:40px; }
+        .reg-headline { font-family:'Fraunces',serif;font-size:clamp(1.4rem,2.5vw,2.1rem);font-weight:700;color:white;line-height:1.2;margin-bottom:16px; }
+        .reg-headline em { font-style:italic;color:var(--sun); }
+        .reg-body { font-size:.92rem;color:rgba(255,255,255,.5);line-height:1.7;max-width:340px; }
+        .reg-nodes { display:flex;align-items:center;gap:0;margin-bottom:16px; }
+        .reg-node { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:.88rem;font-weight:900;color:white;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.2); }
+        .reg-conn { height:2px;width:20px;background:rgba(255,255,255,.15);flex-shrink:0; }
+        .reg-node-new { width:36px;height:36px;border-radius:50%;border:2px dashed rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:rgba(255,255,255,.28);flex-shrink:0; }
+        .reg-node-lbl { font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.26); }
+        .reg-steps { display:flex;align-items:center;gap:8px;margin-bottom:36px; }
+        .reg-pip { width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s,transform .3s; }
+        .reg-pip.active { background:var(--coral);transform:scale(1.3); }
+        .reg-pip.done { background:var(--mint); }
+        .reg-step-lbl { font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-left:6px; }
+        .reg-title { font-family:'Fraunces',serif;font-size:clamp(1.6rem,3vw,2.2rem);font-weight:900;color:var(--ink);line-height:1.05;margin-bottom:8px; }
+        .reg-title em { font-style:italic;color:var(--coral); }
+        .reg-sub { font-size:.88rem;color:var(--muted);margin-bottom:32px;line-height:1.55; }
+        .reg-code-card { background:var(--ink);border-radius:22px;padding:36px;text-align:center;position:relative;overflow:hidden;margin-bottom:20px;animation:popIn .5s cubic-bezier(.34,1.4,.64,1) both; }
+        .reg-code-bg { position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 0% 0%,rgba(255,212,79,.25) 0%,transparent 55%),radial-gradient(ellipse 60% 60% at 100% 100%,rgba(62,207,160,.2) 0%,transparent 55%);pointer-events:none; }
+        .reg-code-emoji { font-size:2.8rem;margin-bottom:14px;display:block;animation:bounce .6s cubic-bezier(.34,1.56,.64,1) both .2s;position:relative; }
+        .reg-code-title { font-family:'Fraunces',serif;font-size:1.4rem;font-weight:900;color:white;line-height:1.1;margin-bottom:8px;position:relative; }
+        .reg-code-title em { font-style:italic;color:var(--sun); }
+        .reg-code-sub { font-size:.82rem;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:22px;position:relative; }
+        .reg-code-val { font-family:'DM Mono',monospace;font-size:clamp(1rem,3vw,1.35rem);font-weight:500;letter-spacing:2px;color:var(--sun);background:rgba(255,212,79,.1);border:1.5px solid rgba(255,212,79,.3);border-radius:13px;padding:14px 20px;margin-bottom:16px;position:relative;word-break:break-all; }
+        .reg-copy-btn { background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:20px;transition:border-color .2s,color .2s;position:relative; }
+        .reg-copy-btn:hover { border-color:rgba(255,255,255,.5);color:white; }
+        .reg-qr-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px; }
+        .reg-qr-box { background:white;border-radius:16px;padding:18px;text-align:center;border:2px solid var(--border); }
+        .reg-qr-lbl { font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;font-weight:700; }
+        .reg-qr-sub { font-size:.7rem;color:var(--muted);margin-top:10px;line-height:1.4; }
+        .reg-wallet-box { background:var(--ink);border-radius:16px;padding:18px;border:2px solid rgba(255,255,255,.08);display:flex;flex-direction:column;justify-content:space-between; }
+        .reg-wallet-lbl { font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);margin-bottom:10px;font-weight:700; }
+        .reg-wp { border-radius:12px;overflow:hidden;margin-bottom:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08); }
+        .reg-wp-hdr { padding:12px 14px;background:linear-gradient(135deg,rgba(255,212,79,.15),rgba(62,207,160,.1)); }
+        .reg-wp-logo { font-family:'Fraunces',serif;font-size:.8rem;font-weight:900;color:white;margin-bottom:8px; }
+        .reg-wp-logo em { font-style:italic;color:var(--sun); }
+        .reg-wp-fields { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+        .reg-wp-lbl { font-size:.48rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.32);margin-bottom:1px; }
+        .reg-wp-val { font-family:'DM Mono',monospace;font-size:.6rem;color:white;font-weight:500;word-break:break-all; }
+        .reg-wp-val.gold { color:var(--sun); }
+        .reg-wp-bar { height:3px;background:linear-gradient(90deg,var(--coral),var(--sun),var(--mint),var(--sky)); }
+        .reg-wbtn { width:100%;padding:9px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:opacity .2s;margin-bottom:5px; }
+        .reg-wbtn-a { background:white;color:var(--ink); }
+        .reg-wbtn-g { background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.15); }
+        .reg-wbtn:hover { opacity:.85; }
+        .reg-wnote { font-size:.58rem;color:rgba(255,255,255,.25);line-height:1.4;text-align:center; }
+        .reg-write-reminder { background:rgba(255,212,79,.1);border:1.5px solid rgba(255,212,79,.3);border-radius:13px;padding:13px 16px;margin-bottom:18px;display:flex;align-items:center;gap:11px; }
+        .reg-actions { display:flex;gap:10px; }
+        .reg-btn-chain { flex:2;padding:13px;background:var(--ink);color:white;border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:background .2s; }
+        .reg-btn-chain:hover { background:var(--coral); }
+        .reg-btn-again { flex:1;padding:13px;background:transparent;color:var(--muted);border:2px solid var(--border);border-radius:13px;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s; }
+        .reg-btn-again:hover { border-color:var(--ink);color:var(--ink); }
+        @media(max-width:780px){ .reg-page{grid-template-columns:1fr;} .reg-left{min-height:240px;padding:80px 24px 32px;} .reg-right{padding:32px 24px;} .reg-qr-grid{grid-template-columns:1fr;} }
+      `}</style>
+      <div className="reg-page">
+        {/* LEFT */}
+        <div className="reg-left">
+          <div className="reg-left-bg"/>
+          <div style={{position:"relative"}}>
+            <button className="btn-back" onClick={()=>go("home")}>← Back to home</button>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:20,marginBottom:6}}>
+              <img src="/logo.png" alt="CoG" style={{width:40,height:40,objectFit:"contain",flexShrink:0}}/>
+              <div className="reg-wordmark">Chain of<em>Gratuity</em></div>
+            </div>
+            <div className="reg-tag">Proof that good spreads</div>
+            <div className="reg-headline">Every great chain starts<br/>with a <em>single card.</em></div>
+            <p className="reg-body">Register your card and get a unique chain code. Every act of kindness linked to this code becomes part of your chain — a permanent, growing record of goodness that started with you.</p>
+          </div>
+          <div style={{position:"relative"}}>
+            <div className="reg-nodes">
+              {[{bg:"#FF6B4A",l:"M"},{bg:"#FFD44F",l:"J"},{bg:"#3ECFA0",l:"P"}].map((n,i)=>(
+                <span key={i} style={{display:"flex",alignItems:"center"}}>
+                  <span className="reg-node" style={{background:n.bg}}>{n.l}</span>
+                  <span className="reg-conn"/>
+                </span>
+              ))}
+              <span className="reg-node-new">+</span>
+            </div>
+            <div className="reg-node-lbl">Your chain starts here</div>
+          </div>
+        </div>
+
+        {/* RIGHT */}
+        <div className="reg-right">
+          <div className="reg-steps">
+            <div className={`reg-pip${step===1?" active":""}${step>1?" done":""}`}/>
+            <div className={`reg-pip${step===2?" active":""}`}/>
+            <span className="reg-step-lbl">{step===1?"Register your card":"Your chain code"}</span>
+          </div>
+
+          {step === 1 ? (
+            <>
+              <h1 className="reg-title">Register your<br/><em>card.</em></h1>
+              <p className="reg-sub">We'll generate a unique chain code just for you. Every good deed done with your card will be linked to it forever.</p>
+              <div className="field-group">
+                <div className="field-label-row"><span className="field-lbl">Your Name</span><span className="field-opt">(optional)</span></div>
+                <input className="field-input" placeholder="How you'd like to appear on the chain" value={name} onChange={e=>setName(e.target.value)} maxLength={60}/>
+              </div>
+              <div className="field-group">
+                <div className="field-label-row"><span className="field-lbl">Your City</span><span className="field-opt">(optional)</span></div>
+                <input className="field-input" placeholder="Where is your chain starting?" value={city} onChange={e=>setCity(e.target.value)} maxLength={60}/>
+                <p className="field-hint">This marks where your chain was born on the map.</p>
+              </div>
+              <div className="field-group">
+                <div className="field-label-row"><span className="field-lbl">How did you get your card?</span></div>
+                <select className="field-input" style={{appearance:"none",cursor:"pointer"}} value={howGot} onChange={e=>setHowGot(e.target.value)}>
+                  <option value="ordered">I ordered cards to start a chain</option>
+                  <option value="found">I found this card</option>
+                  <option value="gift">Someone gave it to me as a gift</option>
+                  <option value="starting">I want to start a chain</option>
+                </select>
+              </div>
+              <button className="btn-primary" style={{width:"100%",padding:15,marginTop:24,fontSize:"1rem",background:"linear-gradient(135deg,var(--coral),#FF8C42)",border:"none"}} disabled={loading} onClick={handleGenerate}>
+                {loading ? "Generating your code…" : "Generate my chain code ✨"}
+              </button>
+              <p style={{textAlign:"center",fontSize:".74rem",color:"var(--muted)",marginTop:12,lineHeight:1.5}}>Your code is permanent and unique. Names and cities are always optional.</p>
+            </>
+          ) : (
+            <>
+              {/* Code reveal */}
+              <div className="reg-code-card">
+                <div className="reg-code-bg"/>
+                <span className="reg-code-emoji">🔗</span>
+                <h2 className="reg-code-title">Your chain<br/><em>is live.</em></h2>
+                <p className="reg-code-sub">Write this on your card, save it to your wallet, and share it with the world.</p>
+                <div className="reg-code-val">{code}</div>
+                <button className="reg-copy-btn" onClick={()=>{navigator.clipboard.writeText(code);showToast("Code copied! ✓");}}>Copy code</button>
+              </div>
+
+              {/* QR + Wallet */}
+              <div className="reg-qr-grid">
+                <div className="reg-qr-box">
+                  <div className="reg-qr-lbl">Your Chain QR Code</div>
+                  <QRImg value={chainUrl} size={130}/>
+                  <p className="reg-qr-sub">Scan to view your chain. Screenshot this for your records.</p>
+                  <button onClick={()=>{navigator.clipboard.writeText(chainUrl);showToast("Link copied! 🔗");}} style={{marginTop:8,background:"none",border:"1.5px solid var(--border)",borderRadius:20,padding:"5px 12px",fontSize:".72rem",color:"var(--muted)",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>Copy link</button>
+                </div>
+                <div className="reg-wallet-box">
+                  <div>
+                    <div className="reg-wallet-lbl">Digital Wallet Pass</div>
+                    <div className="reg-wp">
+                      <div className="reg-wp-hdr">
+                        <div className="reg-wp-logo">Chain of <em>Gratuity</em></div>
+                        <div className="reg-wp-fields">
+                          <div><div className="reg-wp-lbl">Chain Code</div><div className="reg-wp-val gold">{code}</div></div>
+                          <div><div className="reg-wp-lbl">Status</div><div className="reg-wp-val">Active ✦</div></div>
+                          {name&&<div><div className="reg-wp-lbl">Holder</div><div className="reg-wp-val">{name}</div></div>}
+                          {city&&<div><div className="reg-wp-lbl">Origin</div><div className="reg-wp-val">{city}</div></div>}
+                        </div>
+                      </div>
+                      <div className="reg-wp-bar"/>
+                    </div>
+                  </div>
+                  <div>
+                    <button className="reg-wbtn reg-wbtn-a" onClick={()=>showToast("Apple Wallet coming soon! Use QR for now.")}>🍎 Add to Apple Wallet</button>
+                    <button className="reg-wbtn reg-wbtn-g" onClick={()=>showToast("Google Wallet coming soon! Use QR for now.")}>G&nbsp; Add to Google Wallet</button>
+                    <p className="reg-wnote">Screenshot your QR code for now — wallet passes coming soon!</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Write on card reminder */}
+              <div className="reg-write-reminder">
+                <span style={{fontSize:"1.3rem",flexShrink:0}}>✏️</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:".86rem",color:"var(--ink)",marginBottom:2}}>Write your code on your card</div>
+                  <div style={{fontSize:".76rem",color:"var(--muted)",lineHeight:1.5}}>Write <strong style={{fontFamily:"'DM Mono',monospace",color:"var(--ink)"}}>{code}</strong> in the blank space before handing the card to someone.</div>
+                </div>
+              </div>
+
+              <div className="reg-actions">
+                <button className="reg-btn-chain" onClick={()=>go("chain")}>View my chain →</button>
+                <button className="reg-btn-again" onClick={()=>{setStep(1);setCode("");setName("");setCity("");}}>Register another</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {Toast}
+    </>
+  );
+}
+
 // ─── APP SHELL ────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
@@ -1290,12 +1523,13 @@ export default function App() {
       <style>{SHARED_CSS}</style>
       <Nav page={page} go={go} />
       <div className="page-wrap" key={page}>
-        {page === "home"  && <HomePage go={go} />}
-        {page === "feed"  && <FeedPage go={go} />}
-        {page === "chain" && <ChainPage go={go} />}
-        {page === "add"   && <AddPage go={go} />}
-        {page === "ask"   && <AskPage go={go} />}
-        {page === "shop"  && <ShopPage go={go} />}
+        {page === "home"     && <HomePage go={go} />}
+        {page === "feed"     && <FeedPage go={go} />}
+        {page === "chain"    && <ChainPage go={go} />}
+        {page === "add"      && <AddPage go={go} />}
+        {page === "ask"      && <AskPage go={go} />}
+        {page === "shop"     && <ShopPage go={go} />}
+        {page === "register" && <RegisterPage go={go} />}
       </div>
     </>
   );
