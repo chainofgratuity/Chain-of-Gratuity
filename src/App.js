@@ -50,6 +50,74 @@ const ACCENTS = ["#FF6B4A","#FFD44F","#3ECFA0","#4BBEF5","#C084FC","#F472B6"];
 const colorFor = i => ACCENTS[i % ACCENTS.length];
 const timeAgo = iso => { const d=(Date.now()-new Date(iso))/1000; if(d<60)return"just now"; if(d<3600)return`${Math.floor(d/60)}m ago`; if(d<86400)return`${Math.floor(d/3600)}h ago`; return`${Math.floor(d/86400)}d ago`; };
 
+// ─── REPORT SYSTEM ────────────────────────────────────────────────────────────
+async function submitReport(contentId, contentType, reason) {
+  try {
+    await dbQuery("/reports", { method:"POST", body:JSON.stringify({ content_id:String(contentId), content_type:contentType, reason, created_at:new Date().toISOString() }) });
+    return true;
+  } catch(e) { return false; }
+}
+
+const REPORT_REASONS = ["Inappropriate or offensive content","Spam or fake story","Hateful or abusive language","Inappropriate image","Harassment or bullying","Other"];
+
+function ReportModal({ item, contentType, onClose, onSuccess }) {
+  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = async () => {
+    setLoading(true);
+    await submitReport(item.id, contentType, reason);
+    setLoading(false);
+    setSubmitted(true);
+    setTimeout(()=>{onSuccess();onClose();},1800);
+  };
+  return (
+    <div className="compose-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="compose-modal" style={{maxWidth:420}}>
+        {submitted ? (
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <span style={{fontSize:"2.5rem",display:"block",marginBottom:14}}>✓</span>
+            <div style={{fontFamily:"'Fraunces',serif",fontSize:"1.3rem",fontWeight:900,color:"var(--ink)",marginBottom:8}}>Report received.</div>
+            <p style={{fontSize:".86rem",color:"var(--muted)",lineHeight:1.55}}>Thank you for helping keep Chain of Gratuity a safe and positive space.</p>
+          </div>
+        ) : (
+          <>
+            <h2 style={{fontFamily:"'Fraunces',serif",fontSize:"1.4rem",fontWeight:900,color:"var(--ink)",marginBottom:6}}>Report this content</h2>
+            <p style={{fontSize:".84rem",color:"var(--muted)",marginBottom:22,lineHeight:1.5}}>Help us keep Chain of Gratuity a safe and kind space. We review every report.</p>
+            <div className="field-group">
+              <div className="field-label-row"><span className="field-lbl">Reason for reporting</span></div>
+              <select className="field-input" style={{appearance:"none",cursor:"pointer"}} value={reason} onChange={e=>setReason(e.target.value)}>
+                {REPORT_REASONS.map(r=><option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div style={{background:"rgba(255,107,74,.06)",border:"1.5px solid rgba(255,107,74,.15)",borderRadius:12,padding:"12px 14px",marginBottom:22,fontSize:".78rem",color:"#555",lineHeight:1.5}}>
+              ⚠️ Repeated false reports may result in your ability to post being restricted.
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn-cancel-sm" onClick={onClose}>Cancel</button>
+              <button className="btn-primary" style={{flex:2,background:"var(--coral)",border:"none",padding:13}} disabled={loading} onClick={handleSubmit}>
+                {loading?"Submitting…":"Submit report"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ContentPolicyNotice() {
+  return (
+    <div style={{background:"rgba(26,26,46,.04)",border:"1.5px solid var(--border)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"flex-start",gap:10}}>
+      <span style={{fontSize:"1rem",flexShrink:0,marginTop:1}}>🤝</span>
+      <div>
+        <div style={{fontWeight:700,fontSize:".78rem",color:"var(--ink)",marginBottom:3}}>Community Guidelines</div>
+        <div style={{fontSize:".74rem",color:"var(--muted)",lineHeight:1.55}}>Keep it kind, honest, and real. No hate speech, harassment, spam, or inappropriate images. All posts are subject to review. Violations will be removed.</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SHARED NAV ───────────────────────────────────────────────────────────────
 const NAV_CSS = `
   .nav { position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:18px 32px;transition:background .3s,box-shadow .3s,padding .3s; }
@@ -350,6 +418,7 @@ function FeedPage({ go }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true); // eslint-disable-line no-unused-vars
   const [composing, setComposing] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
   const [showToast, Toast] = useToast();
 
   useEffect(() => {
@@ -435,7 +504,10 @@ function FeedPage({ go }) {
                 <p className="post-excerpt">"{p.excerpt}"</p>
                 <div className="post-footer">
                   <span className="post-code">{p.code}</span>
-                  <button className="btn-sm" onClick={e=>{e.stopPropagation();go("chain");}}>View chain →</button>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <button className="btn-sm" style={{background:"none",border:"none",color:"var(--muted)",fontSize:".72rem",padding:"4px 8px",cursor:"pointer"}} onClick={e=>{e.stopPropagation();setReportTarget(p);}}>⚑ Report</button>
+                    <button className="btn-sm" onClick={e=>{e.stopPropagation();go("chain");}}>View chain →</button>
+                  </div>
                 </div>
               </div>
             );
@@ -446,11 +518,13 @@ function FeedPage({ go }) {
           <div className="compose-overlay" onClick={e=>e.target===e.currentTarget&&setComposing(false)}>
             <div className="compose-modal">
               <h2 style={{fontFamily:"'Fraunces',serif",fontSize:"1.6rem",fontWeight:900,marginBottom:6}}>Share a good deed ✨</h2>
-              <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:24,lineHeight:1.5}}>Tell us about the kindness that came your way.</p>
+              <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:18,lineHeight:1.5}}>Tell us about the kindness that came your way.</p>
+              <ContentPolicyNotice/>
               <ComposeForm onSubmit={handlePost} onCancel={()=>setComposing(false)} accentColor="var(--coral)"/>
             </div>
           </div>
         )}
+        {reportTarget && <ReportModal item={reportTarget} contentType="chain_post" onClose={()=>setReportTarget(null)} onSuccess={()=>showToast("Report submitted. Thank you! 🙏")}/>}
         {Toast}
       </div>
     </>
@@ -538,6 +612,8 @@ function ChainMap({ links }) {
 
 function ChainPage({ go }) {
   const [expanded, setExpanded] = useState({});
+  const [reportTarget, setReportTarget] = useState(null);
+  const [showToast, Toast] = useToast();
   const distance = totalDist(CHAIN_LINKS);
   const cities   = [...new Set(CHAIN_LINKS.filter(l=>l.location).map(l=>l.location.split(",")[0]))];
 
@@ -664,6 +740,7 @@ function ChainPage({ go }) {
                       <div className="tl-meta">{link.location&&`📍 ${link.location} · `}{link.date}</div>
                       <p className="tl-story">{isLong&&!exp?link.story.slice(0,220)+"…":link.story}</p>
                       {isLong&&<button className="read-more-btn" onClick={()=>setExpanded(e=>({...e,[link.id]:!e[link.id]}))}>{exp?"Show less ↑":"Read full story ↓"}</button>}
+                      <button onClick={()=>setReportTarget(link)} style={{background:"none",border:"none",color:"var(--muted)",fontSize:".7rem",cursor:"pointer",padding:"6px 0 0",fontFamily:"'DM Sans',sans-serif",display:"block"}}>⚑ Report this story</button>
                     </div>
                   </div>
                 </div>
@@ -695,6 +772,8 @@ function ChainPage({ go }) {
             <button className="btn-share">↗ Share on Instagram</button>
           </div>
         </div>
+        {reportTarget && <ReportModal item={reportTarget} contentType="chain_link" onClose={()=>setReportTarget(null)} onSuccess={()=>showToast("Report submitted. Thank you! 🙏")}/>}
+        {Toast}
       </div>
     </>
   );
@@ -808,7 +887,8 @@ function AddPage({ go }) {
           ) : (
             <>
               <h1 style={{fontFamily:"'Fraunces',serif",fontSize:"clamp(1.6rem,3vw,2.1rem)",fontWeight:900,color:"var(--ink)",lineHeight:1.1,marginBottom:6}}>Add your<br/><em style={{fontStyle:"italic",color:"var(--coral)"}}>story</em> to the chain.</h1>
-              <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:36,lineHeight:1.5}}>Tell us about the act of kindness that brought you here.</p>
+              <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:24,lineHeight:1.5}}>Tell us about the act of kindness that brought you here.</p>
+              <ContentPolicyNotice/>
               <div className="field-group">
                 <div className="field-label-row"><span className="field-lbl">Chain Code</span></div>
                 <div className="code-wrap">
@@ -860,6 +940,7 @@ function AskPage({ go }) {
   const [postOpen, setPostOpen] = useState(false);
   const [helpTarget, setHelpTarget] = useState(null);
   const [resolveTarget, setResolveTarget] = useState(null);
+  const [reqReportTarget, setReqReportTarget] = useState(null);
   const [codes, setCodes]       = useState(null);
   const [showToast, Toast]      = useToast();
 
@@ -979,6 +1060,7 @@ function AskPage({ go }) {
                     <div className="req-btns">
                       <button className="btn-resolve" onClick={()=>setResolveTarget(req)}>✓ Resolved</button>
                       <button className="btn-sm" onClick={()=>setHelpTarget(req)}>I can help →</button>
+                      <button style={{background:"none",border:"none",color:"var(--muted)",fontSize:".72rem",cursor:"pointer",padding:"4px 6px",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setReqReportTarget(req)}>⚑</button>
                     </div>
                   </div>
                 </div>
@@ -1068,13 +1150,11 @@ function AskPage({ go }) {
           </div>
         </div>
       )}
+      {reqReportTarget && <ReportModal item={reqReportTarget} contentType="help_request" onClose={()=>setReqReportTarget(null)} onSuccess={()=>showToast("Report submitted. Thank you! 🙏")}/>}
       {Toast}
     </>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE: SHOP
 // ═══════════════════════════════════════════════════════════════════════════════
 const PRODUCTS = [
   {id:1,name:"Classic Tee",emoji:"👕",desc:"100% organic cotton. Chain of Gratuity wordmark on chest, chain code on back hem.",price:"$32",badge:"Most Popular",badgeColor:"#FF6B4A",bg:"linear-gradient(135deg,#FFF0EC,#FFE4DC)",colors:["#1A1A2E","#FFF8F0","#FF6B4A","#3ECFA0"]},
