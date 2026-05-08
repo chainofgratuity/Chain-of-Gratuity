@@ -1546,7 +1546,10 @@ function RegisterPage({ go }) {
                     <div className="reg-wallet-lbl">Digital Wallet Pass</div>
                     <div className="reg-wp">
                       <div className="reg-wp-hdr">
-                        <div className="reg-wp-logo">Chain of <em>Gratuity</em></div>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                          <img src="/logo.png" alt="CoG" style={{width:28,height:28,objectFit:"contain",flexShrink:0}}/>
+                          <div className="reg-wp-logo">Chain of <em>Gratuity</em></div>
+                        </div>
                         <div className="reg-wp-fields">
                           <div><div className="reg-wp-lbl">Chain Code</div><div className="reg-wp-val gold">{code}</div></div>
                           <div><div className="reg-wp-lbl">Status</div><div className="reg-wp-val">Active ✦</div></div>
