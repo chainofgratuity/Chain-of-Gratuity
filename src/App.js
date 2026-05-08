@@ -348,7 +348,7 @@ function HomePage({ go }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function FeedPage({ go }) {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // eslint-disable-line no-unused-vars
   const [composing, setComposing] = useState(false);
   const [showToast, Toast] = useToast();
 
@@ -855,7 +855,7 @@ function AddPage({ go }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function AskPage({ go }) {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // eslint-disable-line no-unused-vars
   const [filter, setFilter]     = useState("All");
   const [postOpen, setPostOpen] = useState(false);
   const [helpTarget, setHelpTarget] = useState(null);
