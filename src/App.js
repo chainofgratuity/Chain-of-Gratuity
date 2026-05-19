@@ -1590,6 +1590,371 @@ function RegisterPage({ go }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGE: ADMIN
+// ═══════════════════════════════════════════════════════════════════════════════
+const ADMIN_PASSWORD = "cog-admin-2025"; // ← Change this to your own password!
+const ADJ_ADMIN  = ["GOLDEN","BOLD","KIND","WARM","BRIGHT","SWIFT","PURE","NOBLE","BRAVE","CALM","GENTLE","OPEN","STILL","CLEAR","LIGHT","TRUE","DEEP","RICH","FREE","WARM"];
+const NOUN_ADMIN = ["SPARK","WAVE","LINK","SEED","FLAME","CHAIN","RIPPLE","BLOOM","BRIDGE","HAND","GRACE","RISE","HOPE","PATH","GIFT","LIGHT","HEART","BOND","THREAD","REACH"];
+const genAdminCode = () => `${ADJ_ADMIN[Math.floor(Math.random()*ADJ_ADMIN.length)]}-${NOUN_ADMIN[Math.floor(Math.random()*NOUN_ADMIN.length)]}-${String(Math.floor(Math.random()*9000)+1000)}`;
+const genBatch = (n) => Array.from({length:n}, genAdminCode);
+
+function AdminPage({ go }) {
+  const [authed, setAuthed]     = useState(false);
+  const [password, setPassword] = useState("");
+  const [pwError, setPwError]   = useState(false);
+  const [activePage, setActivePage] = useState("dashboard");
+  const [showToast, Toast]      = useToast();
+  const [chains, setChains]     = useState([]);
+  const [reports, setReports]   = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats]       = useState({});
+  const [loading, setLoading]   = useState(false);
+  const [qty, setQty]           = useState(5);
+  const [generatedCodes, setGeneratedCodes] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleLogin = () => {
+    if (password === ADMIN_PASSWORD) { setAuthed(true); loadData(); }
+    else { setPwError(true); setTimeout(()=>setPwError(false),2000); }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [postsData, linksData, reportsData, requestsData] = await Promise.all([
+        dbQuery("/chain_posts?select=*&order=created_at.desc&limit=100"),
+        dbQuery("/chain_links?select=*&order=created_at.desc&limit=100"),
+        dbQuery("/reports?select=*&order=created_at.desc&limit=100"),
+        dbQuery("/help_requests?select=*&order=created_at.desc&limit=100"),
+      ]);
+      setChains(postsData||[]);
+      setReports(reportsData||[]);
+      setRequests(requestsData||[]);
+      setStats({ chains:postsData?.length||0, stories:linksData?.length||0, reports:reportsData?.filter(r=>!r.reviewed)?.length||0, requests:requestsData?.length||0 });
+    } catch(e) { showToast("Error loading data"); }
+    setLoading(false);
+  };
+
+  const handleGenerateCodes = async () => {
+    setGenerating(true);
+    const codes = genBatch(qty);
+    try {
+      await Promise.all(codes.map(code => dbQuery("/chain_posts", { method:"POST", body:JSON.stringify({ author:"Admin", city:null, code, color:["#FF6B4A","#FFD44F","#3ECFA0","#4BBEF5"][Math.floor(Math.random()*4)], excerpt:"A new chain begins.", links:1 }) })));
+    } catch(e) { console.log("Some codes may not have saved"); }
+    setGeneratedCodes(codes);
+    setGenerating(false);
+    showToast(`${qty} codes generated! ✓`);
+  };
+
+  const deleteItem = async () => {
+    if (!confirmDelete) return;
+    try {
+      await dbQuery(`/${confirmDelete.table}?id=eq.${confirmDelete.id}`, { method:"DELETE", prefer:"" });
+      showToast("Deleted ✓");
+      setConfirmDelete(null);
+      loadData();
+    } catch(e) { showToast("Delete failed"); }
+  };
+
+  const markReviewed = async (id) => {
+    try {
+      await dbQuery(`/reports?id=eq.${id}`, { method:"PATCH", body:JSON.stringify({reviewed:true}) });
+      setReports(r=>r.map(rep=>rep.id===id?{...rep,reviewed:true}:rep));
+      showToast("Marked reviewed ✓");
+    } catch(e) { showToast("Update failed"); }
+  };
+
+  const timeAgo = iso => { if(!iso)return"—"; const d=(Date.now()-new Date(iso))/1000; if(d<60)return"just now"; if(d<3600)return`${Math.floor(d/60)}m ago`; if(d<86400)return`${Math.floor(d/3600)}h ago`; return`${Math.floor(d/86400)}d ago`; };
+
+  const ADMIN_STYLES = `
+    .admin-wrap { min-height:100vh; background:#1A1A2E; color:rgba(255,255,255,.88); font-family:'DM Sans',sans-serif; }
+    .admin-lock { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#1A1A2E; }
+    .admin-lock-card { background:#252540; border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:48px 44px; width:100%; max-width:380px; text-align:center; }
+    .admin-lock-icon { width:52px;height:52px;border-radius:14px;background:rgba(255,212,79,.12);border:1px solid rgba(255,212,79,.2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 22px; }
+    .admin-lock-title { font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;color:white;margin-bottom:6px; }
+    .admin-lock-title em { font-style:italic;color:#FFD44F; }
+    .admin-lock-sub { font-size:.84rem;color:rgba(255,255,255,.45);margin-bottom:28px;line-height:1.5; }
+    .admin-pw-input { width:100%;padding:12px 16px;font-family:'DM Mono',monospace;font-size:.95rem;color:white;background:#2E2E50;border:1.5px solid rgba(255,255,255,.08);border-radius:11px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border-color .2s; }
+    .admin-pw-input:focus { border-color:#FFD44F; }
+    .admin-pw-input::placeholder { color:rgba(255,255,255,.2);letter-spacing:0;font-family:'DM Sans',sans-serif;font-size:.88rem; }
+    .admin-pw-error { font-size:.76rem;color:#FF6B4A;margin-bottom:10px; }
+    .admin-unlock-btn { width:100%;padding:12px;background:rgba(255,212,79,.15);border:1.5px solid rgba(255,212,79,.3);color:#FFD44F;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:background .2s; }
+    .admin-unlock-btn:hover { background:rgba(255,212,79,.25); }
+    .admin-layout { display:grid;grid-template-columns:220px 1fr;min-height:100vh; }
+    .admin-sidebar { background:#252540;border-right:1px solid rgba(255,255,255,.06);padding:24px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto; }
+    .admin-brand { display:flex;align-items:center;gap:9px;padding:0 6px;margin-bottom:32px; }
+    .admin-brand-icon { width:30px;height:30px;border-radius:8px;background:rgba(255,212,79,.12);border:1px solid rgba(255,212,79,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem; }
+    .admin-brand-text { font-family:'Fraunces',serif;font-size:.88rem;font-weight:900;color:white;line-height:1.1; }
+    .admin-brand-text em { font-style:italic;color:#FFD44F;display:block; }
+    .admin-nav-lbl { font-size:.58rem;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.22);padding:0 8px;margin-bottom:6px;margin-top:20px; }
+    .admin-nav-item { display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;font-size:.84rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif; }
+    .admin-nav-item:hover { background:rgba(255,255,255,.05);color:rgba(255,255,255,.88); }
+    .admin-nav-item.active { background:rgba(255,212,79,.1);color:#FFD44F;border:1px solid rgba(255,212,79,.15); }
+    .admin-nav-badge { margin-left:auto;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:20px;background:#FF6B4A;color:white; }
+    .admin-sidebar-footer { margin-top:auto;padding:14px 8px 0;border-top:1px solid rgba(255,255,255,.06); }
+    .admin-logout { display:flex;align-items:center;gap:7px;font-size:.8rem;color:rgba(255,255,255,.25);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .2s;padding:7px 3px;width:100%; }
+    .admin-logout:hover { color:#FF6B4A; }
+    .admin-main { padding:36px 44px;overflow-y:auto; }
+    .admin-page-hdr { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:14px; }
+    .admin-page-title { font-family:'Fraunces',serif;font-size:clamp(1.5rem,3vw,2rem);font-weight:900;color:white;line-height:1;margin-bottom:4px; }
+    .admin-page-title em { font-style:italic;color:#FFD44F; }
+    .admin-page-sub { font-size:.82rem;color:rgba(255,255,255,.4); }
+    .admin-stat-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px; }
+    .admin-stat-card { background:#252540;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s; }
+    .admin-stat-card:hover { border-color:rgba(255,255,255,.12); }
+    .admin-stat-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:14px 14px 0 0; }
+    .admin-stat-card:nth-child(1)::before { background:#FF6B4A; }
+    .admin-stat-card:nth-child(2)::before { background:#FFD44F; }
+    .admin-stat-card:nth-child(3)::before { background:#3ECFA0; }
+    .admin-stat-card:nth-child(4)::before { background:#4BBEF5; }
+    .admin-stat-icon { font-size:1.2rem;margin-bottom:12px;display:block; }
+    .admin-stat-num { font-family:'Fraunces',serif;font-size:2.2rem;font-weight:900;line-height:1;display:block;margin-bottom:3px; }
+    .admin-stat-lbl { font-size:.7rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px; }
+    .admin-section { margin-bottom:36px; }
+    .admin-section-hdr { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px; }
+    .admin-section-title { font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:white; }
+    .admin-section-title em { font-style:italic;color:#FFD44F; }
+    .admin-table { background:#252540;border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;width:100%; }
+    .admin-row { display:grid;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center;gap:10px;transition:background .15s; }
+    .admin-row:last-child { border-bottom:none; }
+    .admin-row:hover { background:rgba(255,255,255,.02); }
+    .admin-row.hdr { background:rgba(255,255,255,.03);padding:9px 18px; }
+    .admin-hdr-text { font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);font-weight:700; }
+    .cell-p { font-size:.85rem;color:rgba(255,255,255,.88);font-weight:500; }
+    .cell-s { font-size:.76rem;color:rgba(255,255,255,.45);line-height:1.4; }
+    .cell-m { font-family:'DM Mono',monospace;font-size:.75rem;color:#FFD44F;letter-spacing:.5px; }
+    .cell-t { font-size:.7rem;color:rgba(255,255,255,.25); }
+    .abadge { display:inline-block;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 7px;border-radius:20px; }
+    .abadge-coral { background:rgba(255,107,74,.15);color:#FF6B4A;border:1px solid rgba(255,107,74,.2); }
+    .abadge-mint  { background:rgba(62,207,160,.15);color:#3ECFA0;border:1px solid rgba(62,207,160,.2); }
+    .abadge-sky   { background:rgba(75,190,245,.15);color:#4BBEF5;border:1px solid rgba(75,190,245,.2); }
+    .abadge-sun   { background:rgba(255,212,79,.15);color:#FFD44F;border:1px solid rgba(255,212,79,.2); }
+    .abtn { padding:7px 13px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px; }
+    .abtn-danger { background:rgba(255,107,74,.12);color:#FF6B4A;border:1px solid rgba(255,107,74,.18); }
+    .abtn-danger:hover { background:rgba(255,107,74,.22); }
+    .abtn-primary { background:rgba(255,212,79,.12);color:#FFD44F;border:1px solid rgba(255,212,79,.18); }
+    .abtn-primary:hover { background:rgba(255,212,79,.22); }
+    .abtn-ghost { background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08); }
+    .abtn-ghost:hover { background:rgba(255,255,255,.08);color:rgba(255,255,255,.88); }
+    .abtn-mint { background:rgba(62,207,160,.12);color:#3ECFA0;border:1px solid rgba(62,207,160,.18); }
+    .abtn-mint:hover { background:rgba(62,207,160,.22); }
+    .code-gen-wrap { background:#252540;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px; }
+    .code-gen-ctrls { display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center; }
+    .code-qty-select { padding:8px 13px;background:#2E2E50;border:1.5px solid rgba(255,255,255,.08);border-radius:9px;color:white;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;cursor:pointer;transition:border-color .2s;appearance:none; }
+    .code-qty-select:focus { border-color:#FFD44F; }
+    .code-chips-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px; }
+    .code-chip-item { display:flex;align-items:center;justify-content:space-between;background:#2E2E50;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:.76rem;color:#FFD44F;letter-spacing:.5px;transition:border-color .2s; }
+    .code-chip-item:hover { border-color:rgba(255,212,79,.3); }
+    .chip-copy-btn { background:none;border:none;cursor:pointer;color:rgba(255,255,255,.25);font-size:.85rem;transition:color .15s;padding:1px; }
+    .chip-copy-btn:hover { color:#FFD44F; }
+    .admin-empty { text-align:center;padding:40px 20px; }
+    .admin-empty-icon { font-size:1.8rem;display:block;margin-bottom:10px;opacity:.35; }
+    .admin-empty-text { font-size:.82rem;color:rgba(255,255,255,.25); }
+    .admin-spinner { width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.1);border-top-color:#FFD44F;animation:spin .7s linear infinite;margin:36px auto; }
+    .admin-live-dot { width:6px;height:6px;border-radius:50%;background:#3ECFA0;display:inline-block;margin-right:5px;animation:pulse 1.5s ease-in-out infinite; }
+    .admin-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px; }
+    .admin-modal { background:#252540;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px;width:100%;max-width:360px; }
+    .admin-modal-title { font-family:'Fraunces',serif;font-size:1.2rem;font-weight:900;color:white;margin-bottom:7px; }
+    .admin-modal-body { font-size:.83rem;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:22px; }
+    .admin-modal-actions { display:flex;gap:9px; }
+    .admin-toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#252540;color:white;border:1px solid rgba(255,255,255,.1);padding:9px 20px;border-radius:50px;font-size:.82rem;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastUp .3s ease forwards; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    @keyframes toastUp { to{transform:translateX(-50%) translateY(0)} }
+    @keyframes fadeIn { from{opacity:0}to{opacity:1} }
+    @media(max-width:800px){ .admin-layout{grid-template-columns:1fr;} .admin-sidebar{display:none;} .admin-main{padding:24px 18px;} .admin-stat-grid{grid-template-columns:repeat(2,1fr);} }
+  `;
+
+  if (!authed) return (
+    <>
+      <style>{ADMIN_STYLES}</style>
+      <div className="admin-lock">
+        <div className="admin-lock-card">
+          <div className="admin-lock-icon">🔐</div>
+          <div className="admin-lock-title">Chain of <em>Gratuity</em></div>
+          <p className="admin-lock-sub">Admin access only.<br/>Enter your password to continue.</p>
+          <input className="admin-pw-input" type="password" placeholder="Enter password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} autoFocus/>
+          {pwError && <div className="admin-pw-error">Incorrect password. Try again.</div>}
+          <button className="admin-unlock-btn" onClick={handleLogin}>Unlock Admin →</button>
+        </div>
+      </div>
+    </>
+  );
+
+  const NAV_ITEMS = [
+    {id:"dashboard",icon:"📊",label:"Dashboard"},
+    {id:"codes",    icon:"✨",label:"Generate Codes"},
+    {id:"chains",   icon:"🔗",label:"All Chains"},
+    {id:"reports",  icon:"⚑", label:"Reports",badge:reports.filter(r=>!r.reviewed).length||null},
+    {id:"requests", icon:"🙋",label:"Help Requests"},
+  ];
+
+  const renderPage = () => {
+    if (loading) return <div className="admin-spinner"/>;
+    switch(activePage) {
+      case "dashboard": return (
+        <>
+          <div className="admin-page-hdr">
+            <div><h1 className="admin-page-title">Dashboard <em>overview</em></h1><p className="admin-page-sub"><span className="admin-live-dot"/>Live data from chainofgratuity.com</p></div>
+            <button className="abtn abtn-ghost" onClick={loadData}>↻ Refresh</button>
+          </div>
+          <div className="admin-stat-grid">
+            {[{i:"🔗",n:stats.chains,l:"Total chains",c:"#FF6B4A"},{i:"✍️",n:stats.stories,l:"Stories added",c:"#FFD44F"},{i:"⚑",n:stats.reports,l:"Pending reports",c:"#3ECFA0"},{i:"🙋",n:stats.requests,l:"Help requests",c:"#4BBEF5"}].map((s,i)=>(
+              <div key={i} className="admin-stat-card">
+                <span className="admin-stat-icon">{s.i}</span>
+                <span className="admin-stat-num" style={{color:s.c}}>{s.n??0}</span>
+                <span className="admin-stat-lbl">{s.l}</span>
+              </div>
+            ))}
+          </div>
+          <div className="admin-section">
+            <div className="admin-section-hdr"><div className="admin-section-title">Recent <em>chains</em></div><button className="abtn abtn-ghost" onClick={()=>setActivePage("chains")}>See all →</button></div>
+            <div className="admin-table">
+              <div className="admin-row hdr" style={{gridTemplateColumns:"1fr 1.5fr 80px 80px auto"}}>{["Author","Code","City","Time",""].map((h,i)=><span key={i} className="admin-hdr-text">{h}</span>)}</div>
+              {chains.slice(0,6).map(c=>(
+                <div key={c.id} className="admin-row" style={{gridTemplateColumns:"1fr 1.5fr 80px 80px auto"}}>
+                  <span className="cell-p">{c.author}</span><span className="cell-m">{c.code}</span><span className="cell-s">{c.city||"—"}</span><span className="cell-t">{timeAgo(c.created_at)}</span>
+                  <button className="abtn abtn-danger" onClick={()=>setConfirmDelete({id:c.id,table:"chain_posts",name:c.code})}>Delete</button>
+                </div>
+              ))}
+              {chains.length===0&&<div className="admin-empty"><span className="admin-empty-icon">🔗</span><p className="admin-empty-text">No chains yet</p></div>}
+            </div>
+          </div>
+          {reports.filter(r=>!r.reviewed).length>0&&(
+            <div className="admin-section">
+              <div className="admin-section-hdr"><div className="admin-section-title">⚠️ Pending <em>reports</em></div><button className="abtn abtn-ghost" onClick={()=>setActivePage("reports")}>See all →</button></div>
+              <div className="admin-table">
+                <div className="admin-row hdr" style={{gridTemplateColumns:"120px 1fr 100px auto"}}>{["Type","Reason","Time",""].map((h,i)=><span key={i} className="admin-hdr-text">{h}</span>)}</div>
+                {reports.filter(r=>!r.reviewed).slice(0,4).map(r=>(
+                  <div key={r.id} className="admin-row" style={{gridTemplateColumns:"120px 1fr 100px auto"}}>
+                    <span className="abadge abadge-coral">{r.content_type?.replace("_"," ")}</span><span className="cell-s">{r.reason}</span><span className="cell-t">{timeAgo(r.created_at)}</span>
+                    <div style={{display:"flex",gap:6}}><button className="abtn abtn-mint" onClick={()=>markReviewed(r.id)}>✓</button><button className="abtn abtn-danger" onClick={()=>setConfirmDelete({id:r.id,table:"reports",name:"report"})}>Delete</button></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      );
+      case "codes": return (
+        <>
+          <div className="admin-page-hdr"><div><h1 className="admin-page-title">Generate <em>codes</em></h1><p className="admin-page-sub">Create codes to hand out on physical cards or digitally.</p></div></div>
+          <div className="code-gen-wrap">
+            <div className="code-gen-ctrls">
+              <select className="code-qty-select" value={qty} onChange={e=>setQty(Number(e.target.value))}>
+                {[1,5,10,25,50].map(n=><option key={n} value={n}>{n} code{n>1?"s":""}</option>)}
+              </select>
+              <button className="abtn abtn-primary" onClick={handleGenerateCodes} disabled={generating}>{generating?"Generating…":`✨ Generate ${qty} code${qty>1?"s":""}`}</button>
+              {generatedCodes.length>0&&<><button className="abtn abtn-ghost" onClick={()=>{navigator.clipboard.writeText(generatedCodes.join("\n"));showToast("All copied!");}}>📋 Copy all</button><button className="abtn abtn-ghost" onClick={()=>{const b=new Blob([generatedCodes.join("\n")],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="cog-codes.txt";a.click();}}>⬇ Download</button></>}
+            </div>
+            {generatedCodes.length>0?(
+              <div className="code-chips-grid">
+                {generatedCodes.map((code,i)=>(
+                  <div key={code} className="code-chip-item">
+                    <span>{code}</span>
+                    <button className="chip-copy-btn" onClick={()=>{navigator.clipboard.writeText(code);showToast("Copied!");}}>📋</button>
+                  </div>
+                ))}
+              </div>
+            ):(
+              <div className="admin-empty"><span className="admin-empty-icon">✨</span><p className="admin-empty-text">Select a quantity and generate.<br/>Codes are saved to the database instantly.</p></div>
+            )}
+            {generatedCodes.length>0&&<div style={{background:"rgba(255,212,79,.07)",border:"1px solid rgba(255,212,79,.14)",borderRadius:10,padding:"11px 14px",fontSize:".76rem",color:"rgba(255,255,255,.5)",lineHeight:1.6}}>✏️ Write these on physical cards or share: <span style={{fontFamily:"'DM Mono',monospace",color:"#FFD44F",fontSize:".72rem"}}>chainofgratuity.com/register</span></div>}
+          </div>
+        </>
+      );
+      case "chains": return (
+        <>
+          <div className="admin-page-hdr"><div><h1 className="admin-page-title">All <em>chains</em></h1><p className="admin-page-sub">{chains.length} chains total</p></div><button className="abtn abtn-ghost" onClick={loadData}>↻ Refresh</button></div>
+          <div className="admin-table">
+            <div className="admin-row hdr" style={{gridTemplateColumns:"1fr 1.5fr 80px 80px auto"}}>{["Author","Code","City","Links",""].map((h,i)=><span key={i} className="admin-hdr-text">{h}</span>)}</div>
+            {chains.map(c=>(
+              <div key={c.id} className="admin-row" style={{gridTemplateColumns:"1fr 1.5fr 80px 80px auto"}}>
+                <span className="cell-p">{c.author}</span><span className="cell-m">{c.code}</span><span className="cell-s">{c.city||"—"}</span><span className="abadge abadge-mint">{c.links||1}</span>
+                <button className="abtn abtn-danger" onClick={()=>setConfirmDelete({id:c.id,table:"chain_posts",name:c.code})}>Delete</button>
+              </div>
+            ))}
+            {chains.length===0&&<div className="admin-empty"><span className="admin-empty-icon">🔗</span><p className="admin-empty-text">No chains yet</p></div>}
+          </div>
+        </>
+      );
+      case "reports": return (
+        <>
+          <div className="admin-page-hdr"><div><h1 className="admin-page-title">Content <em>reports</em></h1><p className="admin-page-sub">{reports.filter(r=>!r.reviewed).length} pending review</p></div><button className="abtn abtn-ghost" onClick={loadData}>↻ Refresh</button></div>
+          <div className="admin-table">
+            <div className="admin-row hdr" style={{gridTemplateColumns:"120px 1fr 80px auto"}}>{["Type","Reason","Time",""].map((h,i)=><span key={i} className="admin-hdr-text">{h}</span>)}</div>
+            {reports.map(r=>(
+              <div key={r.id} className="admin-row" style={{gridTemplateColumns:"120px 1fr 80px auto"}}>
+                <span className="abadge abadge-coral">{r.content_type?.replace("_"," ")}</span><span className="cell-s">{r.reason}</span><span className="cell-t">{timeAgo(r.created_at)}</span>
+                <div style={{display:"flex",gap:6}}>{!r.reviewed&&<button className="abtn abtn-mint" onClick={()=>markReviewed(r.id)}>✓</button>}{r.reviewed&&<span className="abadge abadge-mint">Reviewed</span>}<button className="abtn abtn-danger" onClick={()=>setConfirmDelete({id:r.id,table:"reports",name:"report"})}>Delete</button></div>
+              </div>
+            ))}
+            {reports.length===0&&<div className="admin-empty"><span className="admin-empty-icon">✓</span><p className="admin-empty-text">No reports — all clear!</p></div>}
+          </div>
+        </>
+      );
+      case "requests": return (
+        <>
+          <div className="admin-page-hdr"><div><h1 className="admin-page-title">Help <em>requests</em></h1><p className="admin-page-sub">{requests.length} active</p></div><button className="abtn abtn-ghost" onClick={loadData}>↻ Refresh</button></div>
+          <div className="admin-table">
+            <div className="admin-row hdr" style={{gridTemplateColumns:"1fr 2fr 100px auto"}}>{["Name","Request","Category",""].map((h,i)=><span key={i} className="admin-hdr-text">{h}</span>)}</div>
+            {requests.map(r=>(
+              <div key={r.id} className="admin-row" style={{gridTemplateColumns:"1fr 2fr 100px auto"}}>
+                <div><div className="cell-p">{r.name||"Anonymous"}</div><div className="cell-t">📍 {r.location}</div></div><span className="cell-s">{r.ask?.slice(0,70)}…</span><span className="abadge abadge-sky">{r.category}</span>
+                <button className="abtn abtn-danger" onClick={()=>setConfirmDelete({id:r.id,table:"help_requests",name:"request"})}>Delete</button>
+              </div>
+            ))}
+            {requests.length===0&&<div className="admin-empty"><span className="admin-empty-icon">🙋</span><p className="admin-empty-text">No help requests yet</p></div>}
+          </div>
+        </>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <>
+      <style>{ADMIN_STYLES}</style>
+      <div className="admin-wrap">
+        <div className="admin-layout">
+          <aside className="admin-sidebar">
+            <div className="admin-brand">
+              <div className="admin-brand-icon">🔗</div>
+              <div className="admin-brand-text">Chain of<em>Gratuity</em></div>
+            </div>
+            <div className="admin-nav-lbl">Navigation</div>
+            {NAV_ITEMS.map(item=>(
+              <button key={item.id} className={`admin-nav-item${activePage===item.id?" active":""}`} onClick={()=>setActivePage(item.id)}>
+                <span>{item.icon}</span>{item.label}
+                {item.badge?<span className="admin-nav-badge">{item.badge}</span>:null}
+              </button>
+            ))}
+            <div className="admin-sidebar-footer">
+              <button className="admin-logout" onClick={()=>setAuthed(false)}>🔒 Lock admin</button>
+            </div>
+          </aside>
+          <main className="admin-main">{renderPage()}</main>
+        </div>
+      </div>
+      {confirmDelete&&(
+        <div className="admin-modal-overlay" onClick={e=>e.target===e.currentTarget&&setConfirmDelete(null)}>
+          <div className="admin-modal">
+            <div className="admin-modal-title">Delete this?</div>
+            <p className="admin-modal-body">You're about to permanently delete <strong style={{color:"white"}}>{confirmDelete.name}</strong>. This cannot be undone.</p>
+            <div className="admin-modal-actions">
+              <button className="abtn abtn-ghost" style={{flex:1}} onClick={()=>setConfirmDelete(null)}>Cancel</button>
+              <button className="abtn abtn-danger" style={{flex:1}} onClick={deleteItem}>Delete permanently</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {Toast}
+    </>
+  );
+}
+
 // ─── APP SHELL ────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
@@ -1613,6 +1978,7 @@ export default function App() {
         {page === "ask"      && <AskPage go={go} />}
         {page === "shop"     && <ShopPage go={go} />}
         {page === "register" && <RegisterPage go={go} />}
+        {page === "admin"    && <AdminPage go={go} />}
       </div>
     </>
   );
