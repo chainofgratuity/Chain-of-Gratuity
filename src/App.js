@@ -1593,7 +1593,7 @@ function RegisterPage({ go }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE: ADMIN
 // ═══════════════════════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = "cog-admin-2025"; // ← Change this to your own password!
+const ADMIN_PASSWORD = "Roxy80Echo5"; // ← Change this to your own password!
 const ADJ_ADMIN  = ["GOLDEN","BOLD","KIND","WARM","BRIGHT","SWIFT","PURE","NOBLE","BRAVE","CALM","GENTLE","OPEN","STILL","CLEAR","LIGHT","TRUE","DEEP","RICH","FREE","WARM"];
 const NOUN_ADMIN = ["SPARK","WAVE","LINK","SEED","FLAME","CHAIN","RIPPLE","BLOOM","BRIDGE","HAND","GRACE","RISE","HOPE","PATH","GIFT","LIGHT","HEART","BOND","THREAD","REACH"];
 const genAdminCode = () => `${ADJ_ADMIN[Math.floor(Math.random()*ADJ_ADMIN.length)]}-${NOUN_ADMIN[Math.floor(Math.random()*NOUN_ADMIN.length)]}-${String(Math.floor(Math.random()*9000)+1000)}`;
