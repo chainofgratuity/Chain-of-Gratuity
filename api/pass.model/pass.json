@@ -1,0 +1,22 @@
+{
+  "passTypeIdentifier": "pass.com.chainofgratuity",
+  "teamIdentifier": "LADN8R9ALY",
+  "organizationName": "Chain of Gratuity",
+  "description": "Chain of Gratuity Pass",
+  "formatVersion": 1,
+  "foregroundColor": "rgb(255, 255, 255)",
+  "backgroundColor": "rgb(26, 26, 46)",
+  "labelColor": "rgb(255, 212, 79)",
+  "logoText": "Chain of Gratuity",
+  "generic": {
+    "headerFields": [],
+    "primaryFields": [],
+    "secondaryFields": [],
+    "auxiliaryFields": []
+  },
+  "barcode": {
+    "message": "https://chainofgratuity.com",
+    "format": "PKBarcodeFormatQR",
+    "messageEncoding": "iso-8859-1"
+  }
+}

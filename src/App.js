@@ -1589,7 +1589,27 @@ function RegisterPage({ go }) {
                     </div>
                   </div>
                   <div>
-                    <button className="reg-wbtn reg-wbtn-a" onClick={()=>showToast("Apple Wallet coming soon! Use QR for now.")}>🍎 Add to Apple Wallet</button>
+                    <button className="reg-wbtn reg-wbtn-a" onClick={async ()=>{
+                      try {
+                        showToast("Generating your pass…");
+                        const res = await fetch("/api/wallet", {
+                          method:"POST",
+                          headers:{"Content-Type":"application/json"},
+                          body:JSON.stringify({code, name:name||"Anonymous", city:city||null}),
+                        });
+                        if (!res.ok) throw new Error("Failed");
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${code}.pkpass`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        showToast("Pass downloaded! Open it to add to Apple Wallet ✓");
+                      } catch(e) {
+                        showToast("Pass generation failed — try again");
+                      }
+                    }}>🍎 Add to Apple Wallet</button>
                     <button className="reg-wbtn reg-wbtn-g" onClick={()=>showToast("Google Wallet coming soon! Use QR for now.")}>G&nbsp; Add to Google Wallet</button>
                     <p className="reg-wnote">Screenshot your QR code for now — wallet passes coming soon!</p>
                   </div>
@@ -1621,7 +1641,7 @@ function RegisterPage({ go }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE: ADMIN
 // ═══════════════════════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = "Roxy80Echo5"; // ← Change this to your own password!
+const ADMIN_PASSWORD = "cog-admin-2025"; // ← Change this to your own password!
 const ADJ_ADMIN  = ["GOLDEN","BOLD","KIND","WARM","BRIGHT","SWIFT","PURE","NOBLE","BRAVE","CALM","GENTLE","OPEN","STILL","CLEAR","LIGHT","TRUE","DEEP","RICH","FREE","WARM"];
 const NOUN_ADMIN = ["SPARK","WAVE","LINK","SEED","FLAME","CHAIN","RIPPLE","BLOOM","BRIDGE","HAND","GRACE","RISE","HOPE","PATH","GIFT","LIGHT","HEART","BOND","THREAD","REACH"];
 const genAdminCode = () => `${ADJ_ADMIN[Math.floor(Math.random()*ADJ_ADMIN.length)]}-${NOUN_ADMIN[Math.floor(Math.random()*NOUN_ADMIN.length)]}-${String(Math.floor(Math.random()*9000)+1000)}`;
