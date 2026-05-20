@@ -217,6 +217,34 @@ const REQUESTS_DATA = [
 
 const CAT_COLORS = {Transport:"#4BBEF5",Moving:"#FF6B4A",Companionship:"#C084FC",Food:"#3ECFA0",Teaching:"#FFD44F",Financial:"#FF6B4A",Other:"#9A9AAA"};
 
+// ─── SECRET ADMIN TRIGGER ─────────────────────────────────────────────────────
+function SecretAdminTrigger({ go }) {
+  const [clicks, setClicks] = useState(0);
+  const timer = useRef(null);
+
+  const handleClick = () => {
+    const next = clicks + 1;
+    setClicks(next);
+    clearTimeout(timer.current);
+    if (next >= 3) {
+      setClicks(0);
+      go("admin");
+    } else {
+      timer.current = setTimeout(() => setClicks(0), 1500);
+    }
+  };
+
+  return (
+    <div
+      className="footer-copy"
+      onClick={handleClick}
+      style={{ cursor:"default", userSelect:"none" }}
+    >
+      © 2025 Chain of Gratuity. Made with kindness.
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE: HOME
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -405,7 +433,7 @@ function HomePage({ go }) {
           <div><div className="footer-brand">Chain of <em>Gratuity</em></div><div className="footer-tagline">Proof that good spreads.</div></div>
         </div>
         <div className="footer-links">{["Home","Live Feed","Add My Story","Ask for Help","Shop"].map(l=><button key={l} className="footer-link" onClick={()=>go(l.toLowerCase().replace(/ /g,"-"))}>{l}</button>)}</div>
-        <div className="footer-copy">© 2025 Chain of Gratuity. Made with kindness.</div>
+        <SecretAdminTrigger go={go}/>
       </footer>
     </>
   );
@@ -1593,7 +1621,7 @@ function RegisterPage({ go }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAGE: ADMIN
 // ═══════════════════════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = "Roxy80Echo5"; // ← Change this to your own password!
+const ADMIN_PASSWORD = "cog-admin-2025"; // ← Change this to your own password!
 const ADJ_ADMIN  = ["GOLDEN","BOLD","KIND","WARM","BRIGHT","SWIFT","PURE","NOBLE","BRAVE","CALM","GENTLE","OPEN","STILL","CLEAR","LIGHT","TRUE","DEEP","RICH","FREE","WARM"];
 const NOUN_ADMIN = ["SPARK","WAVE","LINK","SEED","FLAME","CHAIN","RIPPLE","BLOOM","BRIDGE","HAND","GRACE","RISE","HOPE","PATH","GIFT","LIGHT","HEART","BOND","THREAD","REACH"];
 const genAdminCode = () => `${ADJ_ADMIN[Math.floor(Math.random()*ADJ_ADMIN.length)]}-${NOUN_ADMIN[Math.floor(Math.random()*NOUN_ADMIN.length)]}-${String(Math.floor(Math.random()*9000)+1000)}`;
