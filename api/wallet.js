@@ -14,23 +14,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "Chain code is required" });
     }
 
-    // Read certificates as buffers
-    const signerCertPath = path.join(process.cwd(), "api", "pass.pem");
-    const signerKeyPath  = path.join(process.cwd(), "api", "pass.key");
-    const wwdrPath       = path.join(process.cwd(), "api", "wwdr.pem");
-
-    // Log what we find for debugging
-    console.log("Cert path:", signerCertPath, "exists:", fs.existsSync(signerCertPath));
-    console.log("Key path:", signerKeyPath, "exists:", fs.existsSync(signerKeyPath));
-    console.log("WWDR path:", wwdrPath, "exists:", fs.existsSync(wwdrPath));
-
-    const signerCert = fs.readFileSync(signerCertPath, "utf8");
-    const signerKey  = fs.readFileSync(signerKeyPath, "utf8");
-    const wwdr       = fs.readFileSync(wwdrPath, "utf8");
-
-    console.log("signerCert starts with:", signerCert.substring(0, 30));
-    console.log("wwdr starts with:", wwdr.substring(0, 30));
-    console.log("signerKey starts with:", signerKey.substring(0, 30));
+    const signerCert = fs.readFileSync(path.join(process.cwd(), "api", "pass.pem"), "utf8");
+    const signerKey  = fs.readFileSync(path.join(process.cwd(), "api", "pass.key"), "utf8");
+    const wwdr       = fs.readFileSync(path.join(process.cwd(), "api", "wwdr.pem"), "utf8");
 
     const pass = await PKPass.from({
       model: path.join(process.cwd(), "api", "pass.model"),
@@ -43,13 +29,52 @@ module.exports = async (req, res) => {
     }, {
       serialNumber: code,
       description: "Chain of Gratuity Pass",
+      // QR code linking directly to the chain page
+      barcodes: [{
+        message: `https://chainofgratuity.com/chain/${code}`,
+        format: "PKBarcodeFormatQR",
+        messageEncoding: "iso-8859-1",
+        altText: code,
+      }],
     });
 
-    pass.headerFields.push({ key:"code", label:"Chain Code", value:code });
-    pass.primaryFields.push({ key:"status", label:"Status", value:"Active ✦" });
-    if (name) pass.secondaryFields.push({ key:"name", label:"Holder", value:name });
-    if (city) pass.secondaryFields.push({ key:"city", label:"Origin", value:city });
-    pass.auxiliaryFields.push({ key:"website", label:"Website", value:"chainofgratuity.com" });
+    // Header - chain code prominent at top
+    pass.headerFields.push({
+      key: "code",
+      label: "Chain Code",
+      value: code,
+    });
+
+    // Primary - status
+    pass.primaryFields.push({
+      key: "status",
+      label: "Status",
+      value: "Active ✦",
+    });
+
+    // Secondary - holder and origin
+    if (name) {
+      pass.secondaryFields.push({
+        key: "name",
+        label: "Holder",
+        value: name,
+      });
+    }
+
+    if (city) {
+      pass.secondaryFields.push({
+        key: "city",
+        label: "Origin",
+        value: city,
+      });
+    }
+
+    // Auxiliary - website
+    pass.auxiliaryFields.push({
+      key: "website",
+      label: "Scan to view chain",
+      value: `chainofgratuity.com/chain/${code}`,
+    });
 
     const buffer = await pass.getAsBuffer();
 
@@ -59,7 +84,6 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error("Pass generation error:", error.message);
-    console.error("Full error:", error);
     res.status(500).json({ error: "Failed to generate pass", details: error.message });
   }
 };
