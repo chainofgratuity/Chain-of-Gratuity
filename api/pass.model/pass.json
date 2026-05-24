@@ -14,13 +14,16 @@
     "secondaryFields": [],
     "auxiliaryFields": []
   },
-  "barcodes": [{
-  "message": "https://chainofgratuity.com",
-  "format": "PKBarcodeFormatQR",
-  "messageEncoding": "iso-8859-1"
-}],
-"barcode": {
-  "message": "https://chainofgratuity.com",
-  "format": "PKBarcodeFormatQR",
-  "messageEncoding": "iso-8859-1"
+  "barcodes": [
+    {
+      "message": "https://chainofgratuity.com",
+      "format": "PKBarcodeFormatQR",
+      "messageEncoding": "iso-8859-1"
+    }
+  ],
+  "barcode": {
+    "message": "https://chainofgratuity.com",
+    "format": "PKBarcodeFormatQR",
+    "messageEncoding": "iso-8859-1"
+  }
 }
