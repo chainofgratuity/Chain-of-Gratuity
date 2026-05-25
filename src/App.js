@@ -1610,7 +1610,22 @@ function RegisterPage({ go }) {
                         showToast("Pass generation failed — try again");
                       }
                     }}>🍎 Add to Apple Wallet</button>
-                    <button className="reg-wbtn reg-wbtn-g" onClick={()=>showToast("Google Wallet coming soon! Use QR for now.")}>G&nbsp; Add to Google Wallet</button>
+                    <button className="reg-wbtn reg-wbtn-g" onClick={async ()=>{
+                      try {
+                        showToast("Generating Google Wallet pass…");
+                        const res = await fetch("/api/googlewallet", {
+                          method:"POST",
+                          headers:{"Content-Type":"application/json"},
+                          body:JSON.stringify({code, name:name||"Anonymous", city:city||null}),
+                        });
+                        if (!res.ok) throw new Error("Failed");
+                        const data = await res.json();
+                        window.open(data.saveUrl, "_blank");
+                        showToast("Opening Google Wallet… ✓");
+                      } catch(e) {
+                        showToast("Google Wallet failed — try again");
+                      }
+                    }}>G&nbsp; Add to Google Wallet</button>
                     <p className="reg-wnote">Screenshot your QR code for now — wallet passes coming soon!</p>
                   </div>
                 </div>
