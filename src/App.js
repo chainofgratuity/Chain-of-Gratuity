@@ -1185,23 +1185,16 @@ function AskPage({ go }) {
 }
 // ═══════════════════════════════════════════════════════════════════════════════
 const PRODUCTS = [
-  {id:1,name:"Classic Tee",emoji:"👕",desc:"100% organic cotton. Chain of Gratuity wordmark on chest, chain code on back hem.",price:"$32",badge:"Most Popular",badgeColor:"#FF6B4A",bg:"linear-gradient(135deg,#FFF0EC,#FFE4DC)",colors:["#1A1A2E","#FFF8F0","#FF6B4A","#3ECFA0"]},
-  {id:2,name:"Dad Hat",emoji:"🧢",desc:"Unstructured 6-panel. Embroidered 'CoG' on front, chain dot motif on side.",price:"$28",badge:"New",badgeColor:"#3ECFA0",bg:"linear-gradient(135deg,#EDFAF5,#D6F5EA)",colors:["#1A1A2E","#FFD44F","#FFF8F0"]},
-  {id:3,name:"Sticker Pack",emoji:"✨",desc:"10 die-cut vinyl stickers. Waterproof, weatherproof. Perfect for spreading the word.",price:"$10",badge:null,bg:"linear-gradient(135deg,#FFF8DC,#FFF0B0)",colors:null},
-  {id:4,name:"Tote Bag",emoji:"👜",desc:"Heavy canvas tote with the full wordmark. Carry kindness.",price:"$24",badge:null,bg:"linear-gradient(135deg,#EDF5FF,#D6E8FF)",colors:["#1A1A2E","#FFF8F0","#4BBEF5"]},
-  {id:5,name:"Enamel Pin",emoji:"📌",desc:"Hard enamel, gold plating. The chain dot motif.",price:"$14",badge:"Limited",badgeColor:"#C084FC",bg:"linear-gradient(135deg,#F5EDFF,#EAD6FF)",colors:null},
-  {id:6,name:"Hoodie",emoji:"🧥",desc:"Midweight fleece. Oversized fit. 'Proof that good spreads' on the back.",price:"$58",badge:null,bg:"linear-gradient(135deg,#F0F0F5,#E0E0EA)",colors:["#1A1A2E","#FFF8F0","#FF6B4A"]},
+  {id:1,name:"Classic Tee",emoji:"👕",desc:"100% organic cotton. Chain of Gratuity wordmark on chest, chain code on back hem.",price:"$25",badge:"Most Popular",badgeColor:"#FF6B4A",bg:"linear-gradient(135deg,#FFF0EC,#FFE4DC)",colors:["#1A1A2E","#FFF8F0","#FF6B4A","#3ECFA0"]},
+  {id:2,name:"Dad Hat",emoji:"🧢",desc:"Unstructured 6-panel. Embroidered 'CoG' on front, chain dot motif on side.",price:"$25",badge:null,badgeColor:"#3ECFA0",bg:"linear-gradient(135deg,#EDFAF5,#D6F5EA)",colors:["#1A1A2E","#FFD44F","#FFF8F0"]},
+  {id:3,name:"Beanie",emoji:"🧤",desc:"Soft knit beanie with embroidered Chain of Gratuity logo. One size fits all.",price:"$25",badge:null,badgeColor:null,bg:"linear-gradient(135deg,#F0F0F5,#E0E0EA)",colors:["#1A1A2E","#FFF8F0","#FF6B4A","#3ECFA0"]},
+  {id:4,name:"Sticker Pack",emoji:"✨",desc:"10 die-cut vinyl stickers. Waterproof, weatherproof. Perfect for spreading the word.",price:"$7",badge:null,badgeColor:null,bg:"linear-gradient(135deg,#FFF8DC,#FFF0B0)",colors:null},
 ];
 
 function ShopPage({ go }) {
   const [cardOpt, setCardOpt] = useState(0);
   const [swatches, setSwatches] = useState({});
   const [showToast, Toast] = useToast();
-  const CARD_OPTS = [
-    {icon:"📦",name:"Physical Cards (Pack of 25)",desc:"Printed, double-sided, ready to hand out",price:"$12"},
-    {icon:"📱",name:"Digital Wallet Pass",desc:"Apple Wallet + Google Wallet instant delivery",price:"$4"},
-    {icon:"🎁",name:"Physical + Digital Bundle",desc:"25 cards and the digital pass — best value",price:"$14"},
-  ];
   return (
     <>
       <style>{`
@@ -1209,25 +1202,7 @@ function ShopPage({ go }) {
         .shop-hero { background:var(--ink);padding:56px 48px 72px;position:relative;overflow:hidden; }
         .shop-hero-bg { position:absolute;inset:0;background:radial-gradient(ellipse 50% 80% at 100% 0%,rgba(255,212,79,.18) 0%,transparent 55%),radial-gradient(ellipse 40% 60% at 0% 100%,rgba(62,207,160,.14) 0%,transparent 55%);pointer-events:none; }
         .shop-body { max-width:1060px;margin:0 auto;padding:60px 48px 90px; }
-        .cards-feature { background:var(--ink);border-radius:24px;overflow:hidden;margin-bottom:56px;display:grid;grid-template-columns:1fr 1fr;position:relative; }
-        .cards-feature-bg { position:absolute;inset:0;background:radial-gradient(ellipse 70% 80% at -10% 50%,rgba(255,212,79,.17) 0%,transparent 55%),radial-gradient(ellipse 50% 50% at 110% 50%,rgba(62,207,160,.13) 0%,transparent 55%);pointer-events:none; }
-        .cf-text { padding:40px 38px;position:relative; }
-        .cf-visual { display:flex;align-items:center;justify-content:center;padding:36px;overflow:hidden; }
-        .v-card-stack { position:relative;width:210px;height:125px; }
-        .v-card { position:absolute;width:210px;height:122px;border-radius:13px;padding:15px 17px;display:flex;flex-direction:column;justify-content:space-between; }
-        .v-c1 { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);transform:rotate(-6deg) translateY(15px);z-index:1; }
-        .v-c2 { background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);transform:rotate(3deg) translateY(8px);z-index:2; }
-        .v-c3 { background:linear-gradient(135deg,rgba(255,107,74,.28),rgba(255,212,79,.18));border:1px solid rgba(255,212,79,.28);z-index:3; }
-        .v-brand { font-family:'Fraunces',serif;font-size:.72rem;font-weight:900;color:white; }
-        .v-brand em { font-style:italic;color:var(--sun); }
-        .v-code { font-family:'DM Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.45); }
-        .cf-option { display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);cursor:pointer;transition:background .2s,border-color .2s;margin-bottom:9px; }
-        .cf-option:hover,.cf-option.sel { background:rgba(255,255,255,.1);border-color:rgba(255,212,79,.4); }
-        .cf-opt-icon { font-size:1.2rem;flex-shrink:0; }
-        .cf-opt-name { font-size:.85rem;font-weight:600;color:white; }
-        .cf-opt-desc { font-size:.7rem;color:rgba(255,255,255,.38); }
-        .cf-opt-price { font-family:'DM Mono',monospace;font-size:.88rem;color:var(--sun);flex-shrink:0; }
-        .product-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:56px; }
+        .product-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-bottom:56px; }
         .product-card { background:white;border-radius:19px;overflow:hidden;box-shadow:0 2px 14px rgba(26,26,46,.06);transition:transform .2s,box-shadow .2s;cursor:pointer; }
         .product-card:hover { transform:translateY(-4px);box-shadow:0 11px 30px rgba(26,26,46,.12); }
         .product-img { aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;overflow:hidden; }
@@ -1240,12 +1215,8 @@ function ShopPage({ go }) {
         .swatch:hover,.swatch.active { border-color:var(--ink); }
         .product-footer { display:flex;align-items:center;justify-content:space-between; }
         .product-price { font-family:'DM Mono',monospace;font-size:.95rem;font-weight:500;color:var(--ink); }
-        .bundle-banner { background:linear-gradient(135deg,var(--coral),#FF8C42,var(--sun));border-radius:22px;padding:36px 40px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap; }
-        .bundle-was { font-size:.8rem;color:rgba(255,255,255,.5);text-decoration:line-through;margin-bottom:2px; }
-        .bundle-now { font-family:'Fraunces',serif;font-size:2.6rem;font-weight:900;color:white;line-height:1; }
-        .bundle-save { font-size:.7rem;color:rgba(255,255,255,.6);margin-top:2px; }
-        @media(max-width:800px){ .product-grid{grid-template-columns:repeat(2,1fr);} .cards-feature{grid-template-columns:1fr;} .cf-visual{display:none;} }
-        @media(max-width:500px){ .product-grid{grid-template-columns:1fr;} .shop-body{padding:40px 20px 70px;} .shop-hero{padding:48px 24px 56px;} }
+        .shipping-note { background:rgba(62,207,160,.08);border:1.5px solid rgba(62,207,160,.2);border-radius:14px;padding:16px 20px;margin-bottom:40px;display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--ink);line-height:1.5; }
+        @media(max-width:600px){ .product-grid{grid-template-columns:1fr;} .shop-body{padding:40px 20px 70px;} .shop-hero{padding:48px 24px 56px;} }
       `}</style>
       <div className="shop-page">
         <div className="shop-hero">
@@ -1253,43 +1224,17 @@ function ShopPage({ go }) {
           <div style={{maxWidth:640,position:"relative"}}>
             <p style={{fontSize:".7rem",textTransform:"uppercase",letterSpacing:"2.5px",color:"rgba(255,255,255,.3)",marginBottom:14}}>The Shop</p>
             <h1 style={{fontFamily:"'Fraunces',serif",fontSize:"clamp(2.2rem,5vw,3.8rem)",fontWeight:900,color:"white",lineHeight:.95,letterSpacing:-1.5,marginBottom:16}}>Wear the<br/><em style={{fontStyle:"italic",color:"var(--sun)"}}>chain.</em></h1>
-            <p style={{fontSize:"1rem",color:"rgba(255,255,255,.48)",lineHeight:1.65,maxWidth:460}}>Cards to start a chain. Merch to spread the word. Every purchase helps keep the platform running and the kindness flowing.</p>
+            <p style={{fontSize:"1rem",color:"rgba(255,255,255,.48)",lineHeight:1.65,maxWidth:460}}>Rep the movement. Every purchase helps keep the platform running and the kindness flowing.</p>
           </div>
         </div>
         <ColorBar/>
         <div className="shop-body">
-          <h2 className="sec-title" style={{marginBottom:6}}>The <em>Cards</em></h2>
-          <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:28,lineHeight:1.5}}>The physical link between strangers. Start your chain here.</p>
-          <div className="cards-feature">
-            <div className="cards-feature-bg"/>
-            <div className="cf-text">
-              <p style={{fontSize:".64rem",textTransform:"uppercase",letterSpacing:"2px",color:"rgba(255,255,255,.3)",marginBottom:12}}>Physical &amp; Digital</p>
-              <h3 style={{fontFamily:"'Fraunces',serif",fontSize:"clamp(1.4rem,2.5vw,1.9rem)",fontWeight:900,color:"white",lineHeight:1.1,marginBottom:12}}>Your chain<br/><em style={{fontStyle:"italic",color:"var(--sun)"}}>starts here.</em></h3>
-              <p style={{fontSize:".85rem",color:"rgba(255,255,255,.48)",lineHeight:1.65,marginBottom:22}}>Each card comes with a unique generated chain code and QR code linking directly to your chain page.</p>
-              <div style={{marginBottom:20}}>
-                {CARD_OPTS.map((o,i)=>(
-                  <div key={i} className={`cf-option${cardOpt===i?" sel":""}`} onClick={()=>setCardOpt(i)}>
-                    <span className="cf-opt-icon">{o.icon}</span>
-                    <div style={{flex:1}}><div className="cf-opt-name">{o.name}</div><div className="cf-opt-desc">{o.desc}</div></div>
-                    <span className="cf-opt-price">{o.price}</span>
-                  </div>
-                ))}
-              </div>
-              <button className="btn-sun" onClick={()=>showToast("Added to cart! 🔗")}>Add to cart — {CARD_OPTS[cardOpt].price}</button>
-            </div>
-            <div className="cf-visual">
-              <div className="v-card-stack">
-                {[1,2,3].map(n=>(
-                  <div key={n} className={`v-card v-c${n}`}>
-                    <div className="v-brand">Chain of <em>Gratuity</em></div>
-                    <div className="v-code">{["WARM-BLOOM-2247","BOLD-WAVE-7731","GOLDEN-SPARK-4821"][n-1]}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
           <h2 className="sec-title" style={{marginBottom:6}}><em>Merch</em></h2>
-          <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:28}}>Wear kindness. Spread the word.</p>
+          <p style={{fontSize:".88rem",color:"var(--muted)",marginBottom:20}}>Wear kindness. Spread the word.</p>
+          <div className="shipping-note">
+            <span style={{fontSize:"1.2rem",flexShrink:0}}>📦</span>
+            <div>Shipping calculated at checkout. All orders fulfilled within 3-5 business days.</div>
+          </div>
           <div className="product-grid">
             {PRODUCTS.map(p=>(
               <div key={p.id} className="product-card">
@@ -1308,19 +1253,6 @@ function ShopPage({ go }) {
                 </div>
               </div>
             ))}
-          </div>
-          <div className="bundle-banner">
-            <div>
-              <div style={{fontSize:".65rem",textTransform:"uppercase",letterSpacing:"2px",color:"rgba(255,255,255,.55)",marginBottom:7}}>Best value</div>
-              <div style={{fontFamily:"'Fraunces',serif",fontSize:"clamp(1.3rem,2.5vw,1.8rem)",fontWeight:900,color:"white",marginBottom:7}}>The Starter Bundle</div>
-              <div style={{fontSize:".86rem",color:"rgba(255,255,255,.65)",lineHeight:1.5}}>25 physical cards + digital wallet pass + a Classic Tee.<br/>Everything you need to start spreading kindness.</div>
-            </div>
-            <div style={{textAlign:"center",flexShrink:0}}>
-              <div className="bundle-was">$44 separately</div>
-              <div className="bundle-now">$36</div>
-              <div className="bundle-save">You save $8</div>
-            </div>
-            <button className="btn-white-coral" onClick={()=>showToast("Bundle added to cart! 🎉")}>Get the bundle →</button>
           </div>
         </div>
         <footer className="site-footer" style={{marginTop:0}}>
