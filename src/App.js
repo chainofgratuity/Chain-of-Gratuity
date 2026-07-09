@@ -148,7 +148,7 @@ function Nav({ page, go }) {
     const h = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", h); return () => window.removeEventListener("scroll", h);
   }, []);
-  const LINKS = [["home","Home"],["feed","Live Feed"],["register","Register My Card"],["chain","My Chain"],["add","Add My Story"],["ask","Ask for Help"],["shop","Shop"]];
+  const LINKS = [["home","Home"],["feed","Live Feed"],["register","Start a Chain"],["chain","My Chain"],["add","Add My Story"],["ask","Ask for Help"],["shop","Shop"]];
   const isDark = page !== "home" || scrolled;
   return (
     <>
@@ -1321,7 +1321,6 @@ function RegisterPage({ go }) {
   const [step, setStep]       = useState(1);
   const [name, setName]       = useState("");
   const [city, setCity]       = useState("");
-  const [howGot, setHowGot]   = useState("ordered");
   const [loading, setLoading] = useState(false);
   const [code, setCode]       = useState("");
   const [showToast, Toast]    = useToast();
@@ -1430,7 +1429,7 @@ function RegisterPage({ go }) {
             </div>
             <div className="reg-tag">Proof that good spreads</div>
             <div className="reg-headline">Every great chain starts<br/>with a <em>single card.</em></div>
-            <p className="reg-body">Register your card and get a unique chain code. Every act of kindness linked to this code becomes part of your chain — a permanent, growing record of goodness that started with you.</p>
+            <p className="reg-body">Start a new chain and get a unique chain code. Every act of kindness linked to this code becomes part of your chain — a permanent, growing record of goodness that started with you.</p>
           </div>
           <div style={{position:"relative"}}>
             <div className="reg-nodes">
@@ -1451,12 +1450,12 @@ function RegisterPage({ go }) {
           <div className="reg-steps">
             <div className={`reg-pip${step===1?" active":""}${step>1?" done":""}`}/>
             <div className={`reg-pip${step===2?" active":""}`}/>
-            <span className="reg-step-lbl">{step===1?"Register your card":"Your chain code"}</span>
+            <span className="reg-step-lbl">{step===1?"Start a new chain":"Your chain code"}</span>
           </div>
 
           {step === 1 ? (
             <>
-              <h1 className="reg-title">Register your<br/><em>card.</em></h1>
+              <h1 className="reg-title">Start a<br/><em>new chain.</em></h1>
               <p className="reg-sub">We'll generate a unique chain code just for you. Every good deed done with your card will be linked to it forever.</p>
               <div className="field-group">
                 <div className="field-label-row"><span className="field-lbl">Your Name</span><span className="field-opt">(optional)</span></div>
@@ -1466,15 +1465,6 @@ function RegisterPage({ go }) {
                 <div className="field-label-row"><span className="field-lbl">Your City</span><span className="field-opt">(optional)</span></div>
                 <input className="field-input" placeholder="Where is your chain starting?" value={city} onChange={e=>setCity(e.target.value)} maxLength={60}/>
                 <p className="field-hint">This marks where your chain was born on the map.</p>
-              </div>
-              <div className="field-group">
-                <div className="field-label-row"><span className="field-lbl">How did you get your card?</span></div>
-                <select className="field-input" style={{appearance:"none",cursor:"pointer"}} value={howGot} onChange={e=>setHowGot(e.target.value)}>
-                  <option value="ordered">I ordered cards to start a chain</option>
-                  <option value="found">I found this card</option>
-                  <option value="gift">Someone gave it to me as a gift</option>
-                  <option value="starting">I want to start a chain</option>
-                </select>
               </div>
               <button className="btn-primary" style={{width:"100%",padding:15,marginTop:24,fontSize:"1rem",background:"linear-gradient(135deg,var(--coral),#FF8C42)",border:"none"}} disabled={loading} onClick={handleGenerate}>
                 {loading ? "Generating your code…" : "Generate my chain code ✨"}
