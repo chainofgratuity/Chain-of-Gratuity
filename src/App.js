@@ -1192,7 +1192,6 @@ const PRODUCTS = [
 ];
 
 function ShopPage({ go }) {
-  const [cardOpt, setCardOpt] = useState(0);
   const [swatches, setSwatches] = useState({});
   const [showToast, Toast] = useToast();
   return (
